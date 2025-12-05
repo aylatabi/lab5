@@ -14,9 +14,9 @@ SpaceInvaders::SpaceInvaders(QWidget *parent) : QWidget(parent)
     controllerNotifier = nullptr;
 
     std::vector<std::vector<int>> alien_types = {
-        {2, 0, 2, 1, 2, 0, 2, 1, 2},
-        // {0, 1, 0, 2, 0, 1, 0, 2, 0},
-        // {1, 2, 1, 0, 1, 2, 1, 0, 1},
+        {2, 0, 2, 1, 2, 0, 2, 1},
+        {0, 1, 0, 2, 0, 1, 0},
+        {1, 2, 1, 0, 1, 2},
     };
     
     //                    0, 1, 2
@@ -27,9 +27,13 @@ SpaceInvaders::SpaceInvaders(QWidget *parent) : QWidget(parent)
     int spacingY = 52;
     for (size_t row = 0; row < alien_types.size(); row++)
     {
+        // qDebug() << "position Y " << positionY << " row " << row;
+        if (row == 1) positionX = 20;
+        else if (row == 2) positionX = 50;
+        alien.push_back(std::vector<Alien>());
         for (size_t column = 0; column < alien_types[row].size(); column++)
         {
-            alien.emplace_back(Alien(alien_types[row][column], true, 100, positionX, positionY));
+            alien[row].emplace_back(Alien(alien_types[row][column], true, 100, positionX, positionY));
             if (alien_types[row][column] == 0)
             {
                 positionX += alien_widths[0] + spacingX;
@@ -43,15 +47,22 @@ SpaceInvaders::SpaceInvaders(QWidget *parent) : QWidget(parent)
                 positionX += alien_widths[2] + spacingX;
             }
 
-            
         }
-        positionX = 0;
+    
+       
         positionY += spacingY;
     }
     
     player.emplace_back(Player("Player1", 100, 220));
    
-    
+    // for (size_t row = 0; row < alien.size(); row++)
+    // {
+    //     for (size_t column = 0; column < alien[row].size(); column++)
+    //     {
+    //         qDebug() << "Column " << column << " " << (alien[row][column].getPosition_x() + 8);
+    //     }
+    //     qDebug() << " ";
+    // }
     setStyleSheet("background-color: black;");
    
     controllerFd = open("/dev/input/event1", O_RDONLY | O_NONBLOCK);
@@ -123,6 +134,136 @@ void SpaceInvaders::platformThread_func()
     }
 }
 
+
+
+bool SpaceInvaders::hit_alien_row_3(int cannon_x_pos)
+{
+    int column = -1;
+    if (58 <= cannon_x_pos && cannon_x_pos <= 106)
+    {
+        column = 0;
+    }
+    else if (126 <= cannon_x_pos && cannon_x_pos <= 158)
+    {
+        column = 1;
+    }
+    else if (178 <= cannon_x_pos && cannon_x_pos <= 226)
+    {
+        column = 2;
+    }
+    else if (246 <= cannon_x_pos && cannon_x_pos <= 290)
+    {
+        column = 3;
+    }
+    else if (310 <= cannon_x_pos && cannon_x_pos <= 358)
+    {
+        column = 4;
+    }
+    else if (378 <= cannon_x_pos && cannon_x_pos <= 410)
+    {
+        column = 5;
+    }
+    if (column > -1)
+    {
+        if (alien[2][column].isAlive())
+        {
+            alien[2][column].damage();
+            return true;
+        }
+    }
+    return false;
+}
+
+bool SpaceInvaders::hit_alien_row_2(int cannon_x_pos)
+{
+    int column = -1;
+    if (28 <= cannon_x_pos && cannon_x_pos <= 72)
+    {
+        column = 0;
+    }
+    else if (92 <= cannon_x_pos && cannon_x_pos <= 140)
+    {
+        column = 1;
+    }
+    else if (160 <= cannon_x_pos && cannon_x_pos <= 204)
+    {
+        column = 2;
+    }
+    else if (224 <= cannon_x_pos && cannon_x_pos <= 256)
+    {
+        column = 3;
+    }
+    else if (276 <= cannon_x_pos && cannon_x_pos <= 320)
+    {
+        column = 4;
+    }
+    else if (340 <= cannon_x_pos && cannon_x_pos <= 388)
+    {
+        column = 5;
+    }
+    else if (408 <= cannon_x_pos && cannon_x_pos <= 452)
+    {
+        column = 6;
+    }
+    if (column > -1)
+    {
+        if (alien[1][column].isAlive())
+        {
+            alien[1][column].damage();
+            return true;
+        }
+    }
+    return false;
+}
+
+bool SpaceInvaders::hit_alien_row_1(int cannon_x_pos)
+{
+    int column = -1;
+   
+    if ((8 <= cannon_x_pos && cannon_x_pos <= 40))
+    {
+        column = 0;
+    }
+    else if (60 <= cannon_x_pos && cannon_x_pos <= 104)
+    {
+        column = 1;
+    }
+    else if (124 <= cannon_x_pos && cannon_x_pos <= 156)
+    {
+        column = 2;
+    }
+    else if (176 <= cannon_x_pos && cannon_x_pos <= 224)
+    {
+        column = 3; 
+    }
+    else if (244 <= cannon_x_pos && cannon_x_pos <= 276)
+    {
+        column = 4;
+    }
+    else if (296 <= cannon_x_pos && cannon_x_pos <= 340)
+    {
+        column = 5;
+    }
+    else if (360 <= cannon_x_pos && cannon_x_pos <= 392)
+    {
+        column = 6; 
+    }
+    else if (412 <= cannon_x_pos && cannon_x_pos <= 460)
+    {
+        column = 7; 
+    }
+
+    if (column > -1)
+    {
+        if (alien[0][column].isAlive())
+        {
+            alien[0][column].damage();
+            return true;
+        }
+    }
+    
+    return false;
+}
 void SpaceInvaders::cannonThread_func()
 {
     int cannon_x_pos = 0;
@@ -131,30 +272,28 @@ void SpaceInvaders::cannonThread_func()
     {
         if (a_button_pressed)
         {
-            for (int i = 0; i < 13; i+=1)
             {
+                std::lock_guard<std::mutex> lock(platform_mtx);
+                cannon_x_pos = curr_platformPosition + 20;
+            }
+            // qDebug() << "cannon x position center" << cannon_x_pos;
+            for (int i = 0; i < 11; i+=1)
+            {                               
+                cannon_y_pos -= 20;
+               
+                if ((4 <= cannon_y_pos && cannon_y_pos <= 36) && (8 <= cannon_x_pos && cannon_x_pos <= 460))
                 {
-                    std::lock_guard<std::mutex> lock(platform_mtx);
-                    cannon_x_pos = curr_platformPosition;
+                    if (hit_alien_row_1(cannon_x_pos)) break;
                 }
-                cannon_y_pos -= 10;
-                if (cannon_y_pos <= 36)
+                if ((56 <= cannon_y_pos && cannon_y_pos <= 88) && (28 <= cannon_x_pos && cannon_x_pos <= 452))
                 {
-                    if (5 <= cannon_x_pos && cannon_x_pos <= 50)
-                    {
-                        {
-                            std::lock_guard<std::mutex> lock(alien_mtx);
-                            alien
-                    
-                        }
-                    }
-
-                   
-                    
-                  
-                    
+                    if (hit_alien_row_2(cannon_x_pos)) break;        
                 }
-                break;
+                if ((108 <= cannon_y_pos && cannon_y_pos <= 140) && (58 <= cannon_x_pos && cannon_x_pos <= 410))
+                {
+                    if (hit_alien_row_3(cannon_x_pos)) break;
+                }
+                
                 std::this_thread::sleep_for(std::chrono::milliseconds(32));
             }
             a_button_pressed = false;
@@ -288,6 +427,7 @@ void SpaceInvaders::drawAlienType_2(QPainter &painter, int position_x, int posit
 void SpaceInvaders::paintEvent(QPaintEvent *event)
 {
     int pos;
+    bool isalive = false;
     Q_UNUSED(event);
     QPainter painter(this);
     {
@@ -315,25 +455,30 @@ void SpaceInvaders::paintEvent(QPaintEvent *event)
         painter.drawRect(pos + 18, cannon_y_pos, 4, 5);
     }
     
-    for (size_t i = 0; i < alien.size(); i++)
+    for (size_t row = 0; row < alien.size(); row++)
     {
-        if (alien[i].isAlive())
+        for (size_t column = 0; column < alien[row].size(); column++)
         {
-            if (alien[i].getType() == 0)
             {
-                drawAlienType_0(painter, alien[i].getPosition_x(), alien[i].getPosition_y());
+                std::lock_guard<std::mutex> lock(alien_mtx);
+                isalive = alien[row][column].isAlive();
             }
-            else if (alien[i].getType() == 1)
+            if (isalive)
             {
-                drawAlienType_1(painter, alien[i].getPosition_x(), alien[i].getPosition_y());
-            }
-            else if (alien[i].getType() == 2)
-            {
-                drawAlienType_2(painter, alien[i].getPosition_x(), alien[i].getPosition_y());
+                if (alien[row][column].getType() == 0)
+                {
+                    drawAlienType_0(painter, alien[row][column].getPosition_x(), alien[row][column].getPosition_y());
+                }
+                else if (alien[row][column].getType() == 1)
+                {
+                    drawAlienType_1(painter, alien[row][column].getPosition_x(), alien[row][column].getPosition_y());
+                }
+                else if (alien[row][column].getType() == 2)
+                {
+                    drawAlienType_2(painter, alien[row][column].getPosition_x(), alien[row][column].getPosition_y());
+                }
             }
         }
-      
-
     }
     // drawAlienType_0(painter, 0, 0);
     // drawAlienType_1(painter, 60, 0);
