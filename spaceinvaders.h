@@ -139,6 +139,14 @@ private:
     bool checkAllAliensDead();
     bool checkAllPlayersDead();
 
+    // Player destruction
+    int player1_explosion_frame = 0;
+    int player2_explosion_frame = 0;
+    int player1_death_x = 0;
+    int player2_death_x = 0;
+    void drawExplosion(QPainter &painter, int center_x, int frame, bool isPlayer1);
+    void drawDestroyedPlatform(QPainter &painter, int position_x, bool isPlayer1);
+
 };
 
 #endif 

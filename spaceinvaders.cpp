@@ -94,33 +94,51 @@ void SpaceInvaders::platformThread_func()
 {
     while(platformThread_running)
     {
-        int player1_moveSpeed = 0;
-        if (player1_stickValue < -8000) {
-            player1_moveSpeed = -5;  // Move left
-        } else if (player1_stickValue > 8000) {
-            player1_moveSpeed = 5;   // Move right
+        bool player1_alive;
+        {
+            std::lock_guard<std::mutex> lock(platform_mtx);
+            player1_alive = player[0].getHealth() > 0;
         }
-        
-        if (player1_moveSpeed != 0) {
-            {
-                std::lock_guard<std::mutex> lock(platform_mtx);
-                player[0].movePlatform(player1_moveSpeed);   
+
+        if (player1_alive)
+        {
+            int player1_moveSpeed = 0;
+            if (player1_stickValue < -8000) {
+                player1_moveSpeed = -5;  // Move left
+            } else if (player1_stickValue > 8000) {
+                player1_moveSpeed = 5;   // Move right
+            }
+
+            if (player1_moveSpeed != 0) {
+                {
+                    std::lock_guard<std::mutex> lock(platform_mtx);
+                    player[0].movePlatform(player1_moveSpeed);
+                }
             }
         }
 
         if (player_mode == MULTI_PLAYER)
         {
-            int player2_moveSpeed = 0;
-            if (player2_stickValue < -8000) {
-                player2_moveSpeed = -5;  // Move left
-            } else if (player2_stickValue > 8000) {
-                player2_moveSpeed = 5;   // Move right
+            bool player2_alive;
+            {
+                std::lock_guard<std::mutex> lock(platform_mtx);
+                player2_alive = player[1].getHealth() > 0;
             }
-            
-            if (player2_moveSpeed != 0) {
-                {
-                    std::lock_guard<std::mutex> lock(platform_mtx);
-                    player[1].movePlatform(player2_moveSpeed);   
+
+            if (player2_alive)
+            {
+                int player2_moveSpeed = 0;
+                if (player2_stickValue < -8000) {
+                    player2_moveSpeed = -5;  // Move left
+                } else if (player2_stickValue > 8000) {
+                    player2_moveSpeed = 5;   // Move right
+                }
+
+                if (player2_moveSpeed != 0) {
+                    {
+                        std::lock_guard<std::mutex> lock(platform_mtx);
+                        player[1].movePlatform(player2_moveSpeed);
+                    }
                 }
             }
         }
@@ -426,14 +444,20 @@ void SpaceInvaders::player2_cannonThread_func()
     int cannon_x_pos = 0;
     while(player2_cannonThread_running)
     {
-        if (player2_a_button_pressed)
+        bool player2_alive;
+        {
+            std::lock_guard<std::mutex> lock(platform_mtx);
+            player2_alive = player[1].getHealth() > 0;
+        }
+
+        if (player2_a_button_pressed && player2_alive)
         {
             {
                 std::lock_guard<std::mutex> lock(platform_mtx);
                 cannon_x_pos = player2_curr_platformPosition;
-               
+
             }
-            
+
             cannon_x_pos += 20;
             // qDebug() << "cannon x position is " << cannon_x_pos;
             for (int i = 0; i < 11; i+=1)
@@ -467,17 +491,23 @@ void SpaceInvaders::player2_cannonThread_func()
 void SpaceInvaders::player1_cannonThread_func()
 {
     int cannon_x_pos = 0;
- 
+
     while(player1_cannonThread_running)
     {
-        if (player1_a_button_pressed)
+        bool player1_alive;
+        {
+            std::lock_guard<std::mutex> lock(platform_mtx);
+            player1_alive = player[0].getHealth() > 0;
+        }
+
+        if (player1_a_button_pressed && player1_alive)
         {
             {
                 std::lock_guard<std::mutex> lock(platform_mtx);
                 cannon_x_pos = player1_curr_platformPosition;
-               
+
             }
-            
+
             cannon_x_pos += 20;
             // qDebug() << "cannon x position is " << cannon_x_pos;
             for (int i = 0; i < 11; i+=1)
@@ -643,6 +673,11 @@ void SpaceInvaders::resetGame()
     isAttacking2 = false;
     attack2_x_pos = 0;
     attack2_y_pos = 0;
+
+    player1_explosion_frame = 0;
+    player2_explosion_frame = 0;
+    player1_death_x = 0;
+    player2_death_x = 0;
 
     end_screen_selection = 0;
 }
@@ -1013,9 +1048,53 @@ void SpaceInvaders::drawPlatforms(QPainter &painter, int curr_player1_pos, int c
         painter.setPen(Qt::NoPen);
         painter.drawRect(curr_player2_pos + 5, 258.5, curr_player2_health, 8);
     }
-    
+
 }
 
+void SpaceInvaders::drawExplosion(QPainter &painter, int center_x, int frame, bool isPlayer1)
+{
+    if (isPlayer1)
+    {
+        painter.setBrush(QColor(255, 0, 170, 255));
+    }
+    else
+    {
+        painter.setBrush(QColor(97, 255, 166, 255));
+    }
+    painter.setPen(Qt::NoPen);
+
+    int center_y = 250;
+    int spread = frame * 3;
+
+    // up
+    painter.drawRect(center_x + 18, center_y - spread, 4, 4);
+    // upleft
+    painter.drawRect(center_x + 5 - spread/2, center_y - spread, 4, 4);
+    // upright
+    painter.drawRect(center_x + 30 + spread/2, center_y - spread, 4, 4);
+    // upleft
+    painter.drawRect(center_x - spread, center_y, 4, 4);
+    // right
+    painter.drawRect(center_x + 40 + spread, center_y, 4, 4);
+    // diagonal upleft
+    painter.drawRect(center_x - spread/2, center_y - spread/2, 4, 4);
+    // diagonal upright
+    painter.drawRect(center_x + 40 + spread/2, center_y - spread/2, 4, 4);
+    // straight up (center)
+    painter.drawRect(center_x + 18, center_y - spread - 10, 4, 4);
+}
+
+void SpaceInvaders::drawDestroyedPlatform(QPainter &painter, int position_x, bool isPlayer1)
+{
+    painter.setBrush(QColor(80, 80, 80, 255));
+    painter.setPen(Qt::NoPen);
+
+    // gaps in the platform
+    painter.drawRect(position_x, 255, 15, 15);
+    painter.drawRect(position_x + 25, 255, 15, 15);
+    painter.drawRect(position_x + 10, 250, 10, 5);
+    painter.drawRect(position_x + 25, 250, 10, 5);
+}
 
 void SpaceInvaders::paintEvent(QPaintEvent *event)
 {
@@ -1038,20 +1117,62 @@ void SpaceInvaders::paintEvent(QPaintEvent *event)
             player1_pos = player1_curr_platformPosition;
             player1_health = player[0].getHealth();
             if (player_mode == MULTI_PLAYER)
-            {               
-                player2_pos = player2_curr_platformPosition;   
-                player2_health = player[1].getHealth();  
+            {
+                player2_pos = player2_curr_platformPosition;
+                player2_health = player[1].getHealth();
+            }
+        }
+
+        if (player1_health <= 0)
+        {
+            if (player1_explosion_frame == 0)
+            {
+                player1_death_x = player1_pos;
+                player1_explosion_frame = 1;
+            }
+            else if (player1_explosion_frame <= 30)
+            {
+                drawExplosion(painter, player1_death_x, player1_explosion_frame, true);
+                player1_explosion_frame++;
+            }
+            else
+            {
+                drawDestroyedPlatform(painter, player1_death_x, true);
+            }
+        }
+
+        if (player_mode == MULTI_PLAYER && player2_health <= 0)
+        {
+            if (player2_explosion_frame == 0)
+            {
+                player2_death_x = player2_pos;
+                player2_explosion_frame = 1;
+            }
+            else if (player2_explosion_frame <= 30)
+            {
+                drawExplosion(painter, player2_death_x, player2_explosion_frame, false);
+                player2_explosion_frame++;
+            }
+            else
+            {
+                drawDestroyedPlatform(painter, player2_death_x, false);
             }
         }
 
         if (player_mode == MULTI_PLAYER)
         {
-            
-            drawPlatforms(painter, player1_pos, player2_pos, player1_health, player2_health);
+            drawPlatforms(painter,
+                player1_health > 0 ? player1_pos : -100,
+                player2_health > 0 ? player2_pos : -100,
+                player1_health > 0 ? player1_health : 0,
+                player2_health > 0 ? player2_health : 0);
         }
         else
         {
-            drawPlatforms(painter, player1_pos, -1, player1_health, -1);
+            if (player1_health > 0)
+            {
+                drawPlatforms(painter, player1_pos, -1, player1_health, -1);
+            }
         }
 
         if (player1_a_button_pressed)
