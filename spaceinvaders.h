@@ -63,7 +63,7 @@ private:
     // PLATFORM 
     std::thread platformThread;
     std::atomic<int> position_offset{0};
-    std::atomic<bool> platformThread_running{true};
+    std::atomic<bool> platformThread_running{false};
     void platformThread_func();
     
     
@@ -71,7 +71,7 @@ private:
     int player1_cannon_display_x_pos = 0;
     std::thread player1_cannonThread;
     std::atomic<bool> player1_a_button_pressed{false};
-    std::atomic<bool> player1_cannonThread_running{true};
+    std::atomic<bool> player1_cannonThread_running{false};
     std::atomic<int> player1_cannon_y_pos{235};
     void player1_cannonThread_func();
 
@@ -79,7 +79,7 @@ private:
     int player2_cannon_display_x_pos = 0;
     std::thread player2_cannonThread;
     std::atomic<bool> player2_a_button_pressed{false};
-    std::atomic<bool> player2_cannonThread_running{true};
+    std::atomic<bool> player2_cannonThread_running{false};
     std::atomic<int> player2_cannon_y_pos{235};
     void player2_cannonThread_func();
     
@@ -97,7 +97,7 @@ private:
     std::atomic<bool> isAttacking{false};
     std::atomic<int> attack_x_pos{0};
     std::atomic<int> attack_y_pos{0};
-    std::atomic<bool> attackThread_running{true};
+    std::atomic<bool> attackThread_running{false};
     void attackThread_func();
 
     void drawAlienType_0(QPainter &painter, int position_x, int position_y);
@@ -122,8 +122,16 @@ private:
     int player2_shield_cooldown_time = 0;
     bool player2_shield_cooldown_enabled = false;
 
+    // End screen
+    int end_screen_selection = 0;
+    bool player_won = false;
+    void drawEndScreen(QPainter &painter);
+    void resetGame();
+    void stopGameThreads();
+    void initializeAliens();
+    bool checkAllAliensDead();
+    bool checkAllPlayersDead();
 
-    
 };
 
 #endif 
