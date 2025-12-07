@@ -148,6 +148,7 @@ private:
     void drawExplosion(QPainter &painter, int center_x, int frame, bool isPlayer1);
     void drawDestroyedPlatform(QPainter &painter, int position_x, bool isPlayer1);
 
+    int game_over_delay = 0;
 };
 
 #endif 

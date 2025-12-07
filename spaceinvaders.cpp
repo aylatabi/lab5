@@ -678,6 +678,7 @@ void SpaceInvaders::resetGame()
     player2_explosion_frame = 0;
     player1_death_x = 0;
     player2_death_x = 0;
+    game_over_delay = 0;
 
     end_screen_selection = 0;
 }
@@ -1490,7 +1491,22 @@ void SpaceInvaders::paintEvent(QPaintEvent *event)
         if (checkAllPlayersDead())
         {
             player_won = false;
-            current_state = END;
+
+            // wait for all explosion animations to complete
+            bool explosions_done = true;
+            if (player1_explosion_frame > 0 && player1_explosion_frame <= 60)
+                explosions_done = false;
+            if (player_mode == MULTI_PLAYER && player2_explosion_frame > 0 && player2_explosion_frame <= 60)
+                explosions_done = false;
+
+            if (explosions_done)
+            {
+                game_over_delay++;
+                if (game_over_delay >= 120)
+                {
+                    current_state = END;
+                }
+            }
         }
     }
     else if (current_state == END)
