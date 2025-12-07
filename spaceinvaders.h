@@ -100,6 +100,13 @@ private:
     std::atomic<bool> attackThread_running{false};
     void attackThread_func();
 
+    std::thread attackThread2;
+    std::atomic<bool> isAttacking2{false};
+    std::atomic<int> attack2_x_pos{0};
+    std::atomic<int> attack2_y_pos{0};
+    std::atomic<bool> attackThread2_running{false};
+    void attackThread2_func();
+
     void drawAlienType_0(QPainter &painter, int position_x, int position_y);
     void drawAlienType_1(QPainter &painter, int position_x, int position_y);
     void drawAlienType_2(QPainter &painter, int position_x, int position_y);

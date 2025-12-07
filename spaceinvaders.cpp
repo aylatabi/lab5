@@ -65,6 +65,7 @@ SpaceInvaders::~SpaceInvaders()
     displayThread_running = false;
     player1_cannonThread_running = false;
     attackThread_running = false;
+    attackThread2_running = false;
 }
 
 void SpaceInvaders::displayThread_func()
@@ -139,10 +140,11 @@ void SpaceInvaders::attackThread_func()
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> distrib_column(0, 7);
     std::uniform_int_distribution<> distrib_row(0, 2);
+    std::uniform_int_distribution<> distrib_delay(800, 1500);
     while(attackThread_running)
     {
-        
-        std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+        int delay = distrib_delay(gen);
+        std::this_thread::sleep_for(std::chrono::milliseconds(delay));
        
         int column = distrib_column(gen);
         int row = distrib_row(gen);
@@ -199,8 +201,82 @@ void SpaceInvaders::attackThread_func()
         
         attack_pos_x = 0;
         attack_pos_y = 0;
-       
-        
+
+
+    }
+}
+
+void SpaceInvaders::attackThread2_func()
+{
+    int attack_pos_x = 0;
+    int attack_pos_y = 0;
+    int alien_type = -1;
+    int num_increments = 0;
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> distrib_column(0, 7);
+    std::uniform_int_distribution<> distrib_row(0, 2);
+    std::uniform_int_distribution<> distrib_delay(1000, 2000);
+    while(attackThread2_running)
+    {
+        int delay = distrib_delay(gen);
+        std::this_thread::sleep_for(std::chrono::milliseconds(delay));
+
+        int column = distrib_column(gen);
+        int row = distrib_row(gen);
+
+        if (row == 1) column = column % 6;
+        if (row == 2) column = column % 5;
+
+        {
+            std::lock_guard<std::mutex> lock(alien_mtx);
+            if (alien[row][column].isAlive())
+            {
+                attack_pos_x = alien[row][column].getPosition_x();
+                attack_pos_y = alien[row][column].getPosition_y();
+                alien_type = alien[row][column].getType();
+            }
+        }
+        if (alien[row][column].isAlive())
+        {
+            if (alien_type == 1)
+            {
+                attack2_x_pos = attack_pos_x + 32;
+            }
+            else if (alien_type == 2)
+            {
+                attack2_x_pos = attack_pos_x + 24;
+            }
+            else if (alien_type == 3)
+            {
+                attack2_x_pos = attack_pos_x + 30;
+            }
+
+            attack2_y_pos = attack_pos_y + 32;
+            if (row == 0)
+            {
+                num_increments = 24;
+            }
+            else if (row == 1)
+            {
+                num_increments = 18;
+            }
+            else if (row == 2)
+            {
+                num_increments = 12;
+            }
+            isAttacking2 = true;
+            for (int i = 0; i < num_increments; i++)
+            {
+                attack2_y_pos += 10;
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            }
+            isAttacking2 = false;
+        }
+
+        attack_pos_x = 0;
+        attack_pos_y = 0;
     }
 }
 
@@ -513,11 +589,13 @@ void SpaceInvaders::stopGameThreads()
     player1_cannonThread_running = false;
     player2_cannonThread_running = false;
     attackThread_running = false;
+    attackThread2_running = false;
 
     if (platformThread.joinable()) platformThread.join();
     if (player1_cannonThread.joinable()) player1_cannonThread.join();
     if (player2_cannonThread.joinable()) player2_cannonThread.join();
     if (attackThread.joinable()) attackThread.join();
+    if (attackThread2.joinable()) attackThread2.join();
 }
 
 void SpaceInvaders::resetGame()
@@ -561,6 +639,10 @@ void SpaceInvaders::resetGame()
     isAttacking = false;
     attack_x_pos = 0;
     attack_y_pos = 0;
+
+    isAttacking2 = false;
+    attack2_x_pos = 0;
+    attack2_y_pos = 0;
 
     end_screen_selection = 0;
 }
@@ -795,9 +877,11 @@ void SpaceInvaders::drawStartScreen(QPainter &painter)
         player1_cannonThread_running = true;
         player2_cannonThread_running = true;
         attackThread_running = true;
+        attackThread2_running = true;
         platformThread = std::thread(&SpaceInvaders::platformThread_func, this);
         player1_cannonThread = std::thread(&SpaceInvaders::player1_cannonThread_func, this);
         attackThread = std::thread(&SpaceInvaders::attackThread_func, this);
+        attackThread2 = std::thread(&SpaceInvaders::attackThread2_func, this);
         if (player_mode == MULTI_PLAYER)
         {
             player2_cannonThread = std::thread(&SpaceInvaders::player2_cannonThread_func, this);
@@ -811,20 +895,33 @@ void SpaceInvaders::drawStartScreen(QPainter &painter)
 
 void SpaceInvaders::drawEndScreen(QPainter &painter)
 {
-    painter.setPen(Qt::white);
-    painter.setFont(QFont("Sans", 16));
+    painter.setFont(QFont("Sans", 20));
 
     if (player_won)
     {
-        painter.drawText(160, 70, "YOU WIN!");
+        painter.setPen(Qt::green);
+        painter.drawText(150, 60, "YOU WIN!");
+        painter.setPen(Qt::white);
+        painter.setFont(QFont("Sans", 10));
+        painter.drawText(115, 85, "All aliens destroyed!");
+
+        drawAlienType_0(painter, 50, 20);
+        drawAlienType_1(painter, 180, 15);
+        drawAlienType_2(painter, 320, 20);
     }
     else
     {
-        painter.drawText(150, 70, "GAME OVER");
-    }
+        painter.setPen(Qt::red);
+        painter.drawText(130, 60, "GAME OVER");
+        painter.setPen(Qt::white);
+        painter.setFont(QFont("Sans", 10));
+        painter.drawText(130, 85, "The aliens won...");
 
-    painter.setFont(QFont("Sans", 10));
-    painter.drawText(130, 100, "Select an option");
+        drawAlienType_1(painter, 60, 15);
+        drawAlienType_2(painter, 150, 20);
+        drawAlienType_0(painter, 230, 20);
+        drawAlienType_1(painter, 330, 15);
+    }
 
     if (player1_stickValue < -8000) {
         end_screen_selection = 0;
@@ -836,24 +933,24 @@ void SpaceInvaders::drawEndScreen(QPainter &painter)
     {
         painter.setBrush(QBrush(Qt::green));
         painter.setPen(Qt::NoPen);
-        painter.drawRect(40, 150, 130, 60);
+        painter.drawRect(30, 150, 140, 60);
     }
     if (end_screen_selection == 1)
     {
         painter.setBrush(QBrush(Qt::green));
         painter.setPen(Qt::NoPen);
-        painter.drawRect(300, 150, 130, 60);
+        painter.drawRect(290, 150, 150, 60);
     }
 
     painter.setBrush(QBrush(Qt::black));
     painter.setPen(Qt::NoPen);
-    painter.drawRect(50, 160, 110, 40);
-    painter.drawRect(310, 160, 110, 40);
+    painter.drawRect(40, 160, 120, 40);
+    painter.drawRect(300, 160, 130, 40);
 
     painter.setPen(Qt::white);
     painter.setFont(QFont("Sans", 12));
-    painter.drawText(60, 185, "Play Again");
-    painter.drawText(320, 185, "Start Screen");
+    painter.drawText(55, 185, "Play Again");
+    painter.drawText(315, 185, "Start Screen");
 
     if (player1_a_button_pressed)
     {
@@ -1148,6 +1245,43 @@ void SpaceInvaders::paintEvent(QPaintEvent *event)
             }
 
 
+        }
+
+        if (isAttacking2)
+        {
+            painter.drawRect(attack2_x_pos, attack2_y_pos, 10, 10);
+            if (player1_pos <= attack2_x_pos && attack2_x_pos <= (player1_pos + 40) && attack2_y_pos >= 235)
+            {
+                if (player1_x_button_pressed)
+                {
+                    isAttacking2 = false;
+                }
+                else
+                {
+                    {
+                        qDebug() << "Player 1 HIT by attack 2";
+                        std::lock_guard<std::mutex> lock(platform_mtx);
+                        player[0].playerHit();
+                        isAttacking2 = false;
+                    }
+                }
+            }
+            if (player2_pos <= attack2_x_pos && attack2_x_pos <= (player2_pos + 40) && attack2_y_pos >= 235)
+            {
+                if (player2_x_button_pressed)
+                {
+                    isAttacking2 = false;
+                }
+                else
+                {
+                    {
+                        qDebug() << "Player 2 HIT by attack 2";
+                        std::lock_guard<std::mutex> lock(platform_mtx);
+                        player[1].playerHit();
+                        isAttacking2 = false;
+                    }
+                }
+            }
         }
 
         if (checkAllAliensDead())
