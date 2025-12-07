@@ -158,7 +158,7 @@ void SpaceInvaders::attackThread_func()
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> distrib_column(0, 7);
     std::uniform_int_distribution<> distrib_row(0, 2);
-    std::uniform_int_distribution<> distrib_delay(800, 1500);
+    std::uniform_int_distribution<> distrib_delay(600, 1200);
     while(attackThread_running)
     {
         int delay = distrib_delay(gen);
@@ -212,7 +212,7 @@ void SpaceInvaders::attackThread_func()
             for (int i = 0; i < num_increments; i++)
             {
                 attack_y_pos += 10;
-                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                std::this_thread::sleep_for(std::chrono::milliseconds(250));
             }
             isAttacking = false;
         }
@@ -235,7 +235,7 @@ void SpaceInvaders::attackThread2_func()
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> distrib_column(0, 7);
     std::uniform_int_distribution<> distrib_row(0, 2);
-    std::uniform_int_distribution<> distrib_delay(1000, 2000);
+    std::uniform_int_distribution<> distrib_delay(800, 1500);
     while(attackThread2_running)
     {
         int delay = distrib_delay(gen);
@@ -288,7 +288,7 @@ void SpaceInvaders::attackThread2_func()
             for (int i = 0; i < num_increments; i++)
             {
                 attack2_y_pos += 10;
-                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                std::this_thread::sleep_for(std::chrono::milliseconds(250));
             }
             isAttacking2 = false;
         }
@@ -828,6 +828,30 @@ void SpaceInvaders::drawAlienType_2(QPainter &painter, int position_x, int posit
 
 }
 
+void SpaceInvaders::drawAlienLaser(QPainter &painter, int x, int y)
+{
+    painter.setPen(Qt::NoPen);
+
+    // widest layer
+    painter.setBrush(QColor(255, 100, 100, 80));
+    painter.drawRect(x + 2, y - 2, 6, 2);      // top glow
+    painter.drawRect(x + 2, y + 16, 6, 2);     // bottom glow
+    painter.drawRect(x, y, 2, 16);             // left glow
+    painter.drawRect(x + 8, y, 2, 16);         // right glow
+
+    // mid layer (orange glow)
+    painter.setBrush(QColor(255, 150, 50, 180));
+    painter.drawRect(x + 2, y, 6, 16);
+
+    // inner core (bright yellow-white) - brightest center
+    painter.setBrush(QColor(255, 255, 200, 255));
+    painter.drawRect(x + 3, y + 1, 4, 14);
+
+    // hot white center line
+    painter.setBrush(QColor(255, 255, 255, 255));
+    painter.drawRect(x + 4, y + 2, 2, 12);
+}
+
 void SpaceInvaders::drawPlayerShield(QPainter &painter, int position_x)
 {
     painter.setBrush(QBrush(Qt::white));
@@ -934,28 +958,28 @@ void SpaceInvaders::drawEndScreen(QPainter &painter)
 
     if (player_won)
     {
-        painter.setPen(Qt::green);
-        painter.drawText(150, 60, "YOU WIN!");
-        painter.setPen(Qt::white);
-        painter.setFont(QFont("Sans", 10));
-        painter.drawText(115, 85, "All aliens destroyed!");
-
         drawAlienType_0(painter, 50, 20);
         drawAlienType_1(painter, 180, 15);
         drawAlienType_2(painter, 320, 20);
+
+        painter.setPen(Qt::green);
+        painter.drawText(150, 85, "YOU WIN!");
+        painter.setPen(Qt::white);
+        painter.setFont(QFont("Sans", 10));
+        painter.drawText(115, 105, "All aliens destroyed!");
     }
     else
     {
-        painter.setPen(Qt::red);
-        painter.drawText(130, 60, "GAME OVER");
-        painter.setPen(Qt::white);
-        painter.setFont(QFont("Sans", 10));
-        painter.drawText(130, 85, "The aliens won...");
-
         drawAlienType_1(painter, 60, 15);
         drawAlienType_2(painter, 150, 20);
         drawAlienType_0(painter, 230, 20);
         drawAlienType_1(painter, 330, 15);
+
+        painter.setPen(Qt::red);
+        painter.drawText(130, 85, "GAME OVER");
+        painter.setPen(Qt::white);
+        painter.setFont(QFont("Sans", 10));
+        painter.drawText(130, 105, "The aliens won...");
     }
 
     if (player1_stickValue < -8000) {
@@ -968,24 +992,24 @@ void SpaceInvaders::drawEndScreen(QPainter &painter)
     {
         painter.setBrush(QBrush(Qt::green));
         painter.setPen(Qt::NoPen);
-        painter.drawRect(30, 150, 140, 60);
+        painter.drawRect(20, 170, 160, 60);
     }
     if (end_screen_selection == 1)
     {
         painter.setBrush(QBrush(Qt::green));
         painter.setPen(Qt::NoPen);
-        painter.drawRect(290, 150, 150, 60);
+        painter.drawRect(280, 170, 170, 60);
     }
 
     painter.setBrush(QBrush(Qt::black));
     painter.setPen(Qt::NoPen);
-    painter.drawRect(40, 160, 120, 40);
-    painter.drawRect(300, 160, 130, 40);
+    painter.drawRect(30, 180, 140, 40);
+    painter.drawRect(290, 180, 150, 40);
 
     painter.setPen(Qt::white);
     painter.setFont(QFont("Sans", 12));
-    painter.drawText(55, 185, "Play Again");
-    painter.drawText(315, 185, "Start Screen");
+    painter.drawText(55, 205, "Play Again");
+    painter.drawText(315, 205, "Start Screen");
 
     if (player1_a_button_pressed)
     {
@@ -1053,47 +1077,100 @@ void SpaceInvaders::drawPlatforms(QPainter &painter, int curr_player1_pos, int c
 
 void SpaceInvaders::drawExplosion(QPainter &painter, int center_x, int frame, bool isPlayer1)
 {
-    if (isPlayer1)
-    {
-        painter.setBrush(QColor(255, 0, 170, 255));
-    }
-    else
-    {
-        painter.setBrush(QColor(97, 255, 166, 255));
-    }
+    QColor baseColor = isPlayer1 ? QColor(255, 0, 170, 255) : QColor(97, 255, 166, 255);
     painter.setPen(Qt::NoPen);
 
     int center_y = 250;
-    int spread = frame * 3;
+    // Slower spread - was frame * 3, now frame * 1.5
+    int spread = frame * 1.5;
+
+    // Fade out particles as they spread (alpha decreases over time)
+    int alpha = qMax(0, 255 - (frame * 4));
+    QColor fadingColor = baseColor;
+    fadingColor.setAlpha(alpha);
+
+    // Bright flash at the start
+    if (frame < 15)
+    {
+        int flashAlpha = qMax(0, 255 - (frame * 17));
+        painter.setBrush(QColor(255, 255, 255, flashAlpha));
+        int flashSize = 20 + frame;
+        painter.drawEllipse(center_x + 10, center_y - 10, flashSize, flashSize);
+    }
+
+    painter.setBrush(fadingColor);
+
+    // Main particles - larger sizes that shrink over time
+    int particleSize = qMax(2, 6 - frame / 15);
 
     // up
-    painter.drawRect(center_x + 18, center_y - spread, 4, 4);
+    painter.drawRect(center_x + 18, center_y - spread, particleSize, particleSize);
     // upleft
-    painter.drawRect(center_x + 5 - spread/2, center_y - spread, 4, 4);
+    painter.drawRect(center_x + 5 - spread/2, center_y - spread, particleSize, particleSize);
     // upright
-    painter.drawRect(center_x + 30 + spread/2, center_y - spread, 4, 4);
-    // upleft
-    painter.drawRect(center_x - spread, center_y, 4, 4);
+    painter.drawRect(center_x + 30 + spread/2, center_y - spread, particleSize, particleSize);
+    // left
+    painter.drawRect(center_x - spread, center_y, particleSize, particleSize);
     // right
-    painter.drawRect(center_x + 40 + spread, center_y, 4, 4);
+    painter.drawRect(center_x + 40 + spread, center_y, particleSize, particleSize);
     // diagonal upleft
-    painter.drawRect(center_x - spread/2, center_y - spread/2, 4, 4);
+    painter.drawRect(center_x - spread/2, center_y - spread/2, particleSize, particleSize);
     // diagonal upright
-    painter.drawRect(center_x + 40 + spread/2, center_y - spread/2, 4, 4);
+    painter.drawRect(center_x + 40 + spread/2, center_y - spread/2, particleSize, particleSize);
     // straight up (center)
-    painter.drawRect(center_x + 18, center_y - spread - 10, 4, 4);
+    painter.drawRect(center_x + 18, center_y - spread - 10, particleSize, particleSize);
+
+    // Additional debris particles with offset timing
+    if (frame > 10)
+    {
+        int debris_spread = (frame - 10) * 2;
+        int debrisSize = qMax(2, 4 - frame / 20);
+        // Extra diagonal particles
+        painter.drawRect(center_x + 10 - debris_spread, center_y - debris_spread/3, debrisSize, debrisSize);
+        painter.drawRect(center_x + 30 + debris_spread, center_y - debris_spread/3, debrisSize, debrisSize);
+        painter.drawRect(center_x + 20, center_y - debris_spread - 5, debrisSize, debrisSize);
+    }
 }
 
 void SpaceInvaders::drawDestroyedPlatform(QPainter &painter, int position_x, bool isPlayer1)
 {
-    painter.setBrush(QColor(80, 80, 80, 255));
     painter.setPen(Qt::NoPen);
 
-    // gaps in the platform
-    painter.drawRect(position_x, 255, 15, 15);
-    painter.drawRect(position_x + 25, 255, 15, 15);
-    painter.drawRect(position_x + 10, 250, 10, 5);
-    painter.drawRect(position_x + 25, 250, 10, 5);
+    // Darker color for burnt/destroyed look
+    QColor darkGray(50, 50, 50, 255);
+    QColor medGray(80, 80, 80, 255);
+    QColor lightGray(110, 110, 110, 255);
+
+    // Faded player color for some debris pieces
+    QColor baseColor = isPlayer1 ? QColor(255, 0, 170, 80) : QColor(97, 255, 166, 80);
+
+    // Left chunk of destroyed hull
+    painter.setBrush(darkGray);
+    painter.drawRect(position_x, 260, 12, 10);
+    painter.setBrush(medGray);
+    painter.drawRect(position_x + 2, 257, 8, 5);
+
+    // Right chunk of destroyed hull
+    painter.setBrush(darkGray);
+    painter.drawRect(position_x + 28, 260, 12, 10);
+    painter.setBrush(medGray);
+    painter.drawRect(position_x + 30, 257, 8, 5);
+
+    // Middle debris (broken cannon piece)
+    painter.setBrush(lightGray);
+    painter.drawRect(position_x + 17, 262, 6, 8);
+    painter.drawRect(position_x + 18, 258, 4, 4);
+
+    // Scattered small debris
+    painter.setBrush(medGray);
+    painter.drawRect(position_x + 14, 265, 3, 3);
+    painter.drawRect(position_x + 24, 267, 3, 3);
+
+    // Faint colored remnants to show it was the player's ship
+    painter.setBrush(baseColor);
+    painter.drawRect(position_x + 4, 262, 4, 4);
+    painter.drawRect(position_x + 32, 262, 4, 4);
+    painter.drawRect(position_x + 18, 264, 4, 3);
 }
 
 void SpaceInvaders::paintEvent(QPaintEvent *event)
@@ -1130,7 +1207,7 @@ void SpaceInvaders::paintEvent(QPaintEvent *event)
                 player1_death_x = player1_pos;
                 player1_explosion_frame = 1;
             }
-            else if (player1_explosion_frame <= 30)
+            else if (player1_explosion_frame <= 60)
             {
                 drawExplosion(painter, player1_death_x, player1_explosion_frame, true);
                 player1_explosion_frame++;
@@ -1148,7 +1225,7 @@ void SpaceInvaders::paintEvent(QPaintEvent *event)
                 player2_death_x = player2_pos;
                 player2_explosion_frame = 1;
             }
-            else if (player2_explosion_frame <= 30)
+            else if (player2_explosion_frame <= 60)
             {
                 drawExplosion(painter, player2_death_x, player2_explosion_frame, false);
                 player2_explosion_frame++;
@@ -1175,19 +1252,19 @@ void SpaceInvaders::paintEvent(QPaintEvent *event)
             }
         }
 
-        if (player1_a_button_pressed)
-        {  
+        if (player1_a_button_pressed && player1_health > 0)
+        {
             if (player1_cannon_display_x_flag == 0)
             {
                 player1_cannon_display_x_pos = player1_pos;
                 player1_cannon_display_x_flag = 1;
             }
             painter.setBrush(QColor(255, 0, 170, 255));
-            painter.setPen(Qt::NoPen);  
+            painter.setPen(Qt::NoPen);
             painter.drawRect(player1_cannon_display_x_pos + 18, player1_cannon_y_pos, 4, 5);
         }
 
-        if (player2_a_button_pressed)
+        if (player2_a_button_pressed && player2_health > 0)
         {
             if (player2_cannon_display_x_flag == 0)
             {
@@ -1329,7 +1406,7 @@ void SpaceInvaders::paintEvent(QPaintEvent *event)
         
         if (isAttacking)
         {
-            painter.drawRect(attack_x_pos, attack_y_pos, 10, 10);
+            drawAlienLaser(painter, attack_x_pos, attack_y_pos);
             if (player1_pos <= attack_x_pos && attack_x_pos <= (player1_pos + 40) && attack_y_pos >= 235)
             {
                 if (player1_x_button_pressed)
@@ -1370,7 +1447,7 @@ void SpaceInvaders::paintEvent(QPaintEvent *event)
 
         if (isAttacking2)
         {
-            painter.drawRect(attack2_x_pos, attack2_y_pos, 10, 10);
+            drawAlienLaser(painter, attack2_x_pos, attack2_y_pos);
             if (player1_pos <= attack2_x_pos && attack2_x_pos <= (player1_pos + 40) && attack2_y_pos >= 235)
             {
                 if (player1_x_button_pressed)

@@ -110,6 +110,7 @@ private:
     void drawAlienType_0(QPainter &painter, int position_x, int position_y);
     void drawAlienType_1(QPainter &painter, int position_x, int position_y);
     void drawAlienType_2(QPainter &painter, int position_x, int position_y);
+    void drawAlienLaser(QPainter &painter, int x, int y);
     bool hit_alien_row_1(int cannon_x_pos);
     bool hit_alien_row_2(int cannon_x_pos);
     bool hit_alien_row_3(int cannon_x_pos);
