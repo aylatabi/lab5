@@ -5,6 +5,7 @@
 #include <QSocketNotifier>
 #include "player.h"
 #include "alien.h"
+#include <string>
 #include <vector>
 #include <thread>
 #include <atomic>
@@ -65,22 +66,29 @@ private:
     std::atomic<bool> platformThread_running{true};
     void platformThread_func();
     
-    int player1_pos;
-    int player2_pos;
     
-    std::thread cannonThread;
+    std::atomic<int> player1_cannon_display_x_flag{0};
+    int player1_cannon_display_x_pos = 0;
+    std::thread player1_cannonThread;
     std::atomic<bool> player1_a_button_pressed{false};
-    std::atomic<bool> cannonThread_running{true};
-    std::atomic<int> cannon_y_pos{235};
-    void cannonThread_func();
+    std::atomic<bool> player1_cannonThread_running{true};
+    std::atomic<int> player1_cannon_y_pos{235};
+    void player1_cannonThread_func();
 
-
+    std::atomic<int> player2_cannon_display_x_flag{0};
+    int player2_cannon_display_x_pos = 0;
+    std::thread player2_cannonThread;
     std::atomic<bool> player2_a_button_pressed{false};
+    std::atomic<bool> player2_cannonThread_running{true};
+    std::atomic<int> player2_cannon_y_pos{235};
+    void player2_cannonThread_func();
+    
+  
 
     // *********
     int player1_curr_platformPosition;
     int player2_curr_platformPosition;
-    void drawPlatforms(QPainter &painter, int player1_pos, int player2_pos);
+    void drawPlatforms(QPainter &painter, int curr_player1_pos, int curr_player2_pos, int curr_player1_health, int curr_player2_health);
     std::thread displayThread;
     std::atomic<bool> displayThread_running{true};
     void displayThread_func();
@@ -101,10 +109,21 @@ private:
     bool hit_player(int attack_x_pos, int attack_y_pos, int player_x_pos);
 
     std::atomic<bool> player1_x_button_pressed{false};
-    std::atomic<bool> player2_x_button_pressed{false};
     int player1_shield_time = 0;
     int player1_shield_flag = 0;
     void drawPlayerShield(QPainter &painter, int position_x);
+    int player1_shield_cooldown_time = 0;
+    bool player1_shield_cooldown_enabled = false;
+
+    std::atomic<bool> player2_x_button_pressed{false};
+   
+    int player2_shield_time = 0;
+    int player2_shield_flag = 0;
+    int player2_shield_cooldown_time = 0;
+    bool player2_shield_cooldown_enabled = false;
+
+
+    
 };
 
 #endif 

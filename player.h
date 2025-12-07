@@ -9,7 +9,9 @@ public:
     Player(const std::string& name, int health, int position)
         : name(name), health(health), position(position) {}
     int getPosition() const { return position; }
-    void movePlatform(int offset) {position += offset;}
+    int getHealth() const {return health;}
+    void playerHit() {health -= 15;}
+    void movePlatform(int offset);
 private:
     std::string name;
     int health;
