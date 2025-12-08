@@ -1080,98 +1080,47 @@ void SpaceInvaders::drawExplosion(QPainter &painter, int center_x, int frame, bo
 {
     QColor baseColor = isPlayer1 ? QColor(255, 0, 170, 255) : QColor(97, 255, 166, 255);
     painter.setPen(Qt::NoPen);
+    painter.setBrush(baseColor);
 
     int center_y = 250;
-    // Slower spread - was frame * 3, now frame * 1.5
-    int spread = frame * 1.5;
 
-    // Fade out particles as they spread (alpha decreases over time)
-    int alpha = qMax(0, 255 - (frame * 4));
-    QColor fadingColor = baseColor;
-    fadingColor.setAlpha(alpha);
-
-    // Bright flash at the start
-    if (frame < 15)
+    if (frame <= 15)
     {
-        int flashAlpha = qMax(0, 255 - (frame * 17));
-        painter.setBrush(QColor(255, 255, 255, flashAlpha));
-        int flashSize = 20 + frame;
-        painter.drawEllipse(center_x + 10, center_y - 10, flashSize, flashSize);
+        painter.drawRect(center_x + 16, center_y - 4, 4, 4);
+        painter.drawRect(center_x + 20, center_y - 4, 4, 4);
+        painter.drawRect(center_x + 16, center_y, 4, 4);
+        painter.drawRect(center_x + 20, center_y, 4, 4);
     }
-
-    painter.setBrush(fadingColor);
-
-    // Main particles - larger sizes that shrink over time
-    int particleSize = qMax(2, 6 - frame / 15);
-
-    // up
-    painter.drawRect(center_x + 18, center_y - spread, particleSize, particleSize);
-    // upleft
-    painter.drawRect(center_x + 5 - spread/2, center_y - spread, particleSize, particleSize);
-    // upright
-    painter.drawRect(center_x + 30 + spread/2, center_y - spread, particleSize, particleSize);
-    // left
-    painter.drawRect(center_x - spread, center_y, particleSize, particleSize);
-    // right
-    painter.drawRect(center_x + 40 + spread, center_y, particleSize, particleSize);
-    // diagonal upleft
-    painter.drawRect(center_x - spread/2, center_y - spread/2, particleSize, particleSize);
-    // diagonal upright
-    painter.drawRect(center_x + 40 + spread/2, center_y - spread/2, particleSize, particleSize);
-    // straight up (center)
-    painter.drawRect(center_x + 18, center_y - spread - 10, particleSize, particleSize);
-
-    // Additional debris particles with offset timing
-    if (frame > 10)
+    else if (frame <= 35)
     {
-        int debris_spread = (frame - 10) * 2;
-        int debrisSize = qMax(2, 4 - frame / 20);
-        // Extra diagonal particles
-        painter.drawRect(center_x + 10 - debris_spread, center_y - debris_spread/3, debrisSize, debrisSize);
-        painter.drawRect(center_x + 30 + debris_spread, center_y - debris_spread/3, debrisSize, debrisSize);
-        painter.drawRect(center_x + 20, center_y - debris_spread - 5, debrisSize, debrisSize);
+        painter.drawRect(center_x + 18, center_y - 16, 4, 4);  // up
+        painter.drawRect(center_x + 18, center_y + 8, 4, 4);   // down
+        painter.drawRect(center_x, center_y - 4, 4, 4);        // left
+        painter.drawRect(center_x + 36, center_y - 4, 4, 4);   // right
+        painter.drawRect(center_x + 8, center_y - 12, 4, 4);   // up-left
+        painter.drawRect(center_x + 28, center_y - 12, 4, 4);  // up-right
+    }
+    else
+    {
+        painter.drawRect(center_x - 8, center_y - 8, 4, 4);
+        painter.drawRect(center_x + 44, center_y - 8, 4, 4);
+        painter.drawRect(center_x + 18, center_y - 28, 4, 4);
+        painter.drawRect(center_x + 4, center_y - 20, 4, 4);
+        painter.drawRect(center_x + 32, center_y - 20, 4, 4);
     }
 }
 
 void SpaceInvaders::drawDestroyedPlatform(QPainter &painter, int position_x, bool isPlayer1)
 {
+    QColor baseColor = isPlayer1 ? QColor(255, 0, 170, 255) : QColor(97, 255, 166, 255);
     painter.setPen(Qt::NoPen);
-
-    // Darker color for burnt/destroyed look
-    QColor darkGray(50, 50, 50, 255);
-    QColor medGray(80, 80, 80, 255);
-    QColor lightGray(110, 110, 110, 255);
-
-    // Faded player color for some debris pieces
-    QColor baseColor = isPlayer1 ? QColor(255, 0, 170, 80) : QColor(97, 255, 166, 80);
-
-    // Left chunk of destroyed hull
-    painter.setBrush(darkGray);
-    painter.drawRect(position_x, 260, 12, 10);
-    painter.setBrush(medGray);
-    painter.drawRect(position_x + 2, 257, 8, 5);
-
-    // Right chunk of destroyed hull
-    painter.setBrush(darkGray);
-    painter.drawRect(position_x + 28, 260, 12, 10);
-    painter.setBrush(medGray);
-    painter.drawRect(position_x + 30, 257, 8, 5);
-
-    // Middle debris (broken cannon piece)
-    painter.setBrush(lightGray);
-    painter.drawRect(position_x + 17, 262, 6, 8);
-    painter.drawRect(position_x + 18, 258, 4, 4);
-
-    // Scattered small debris
-    painter.setBrush(medGray);
-    painter.drawRect(position_x + 14, 265, 3, 3);
-    painter.drawRect(position_x + 24, 267, 3, 3);
-
-    // Faint colored remnants to show it was the player's ship
     painter.setBrush(baseColor);
-    painter.drawRect(position_x + 4, 262, 4, 4);
-    painter.drawRect(position_x + 32, 262, 4, 4);
-    painter.drawRect(position_x + 18, 264, 4, 3);
+
+    painter.drawRect(position_x + 4, 264, 4, 4);
+    painter.drawRect(position_x + 16, 260, 4, 4);
+    painter.drawRect(position_x + 32, 264, 4, 4);
+    painter.drawRect(position_x + 12, 268, 4, 4);
+    painter.drawRect(position_x + 24, 268, 4, 4);
 }
 
 void SpaceInvaders::paintEvent(QPaintEvent *event)
