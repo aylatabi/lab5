@@ -93,7 +93,7 @@ private:
     std::atomic<bool> displayThread_running{true};
     void displayThread_func();
 
-    static const int NUM_ATTACKS = 3;
+    static const int NUM_ATTACKS = 4;
     std::thread attackThread[NUM_ATTACKS];
     std::atomic<bool> isAttacking[NUM_ATTACKS];
     std::atomic<int> attack_x_pos[NUM_ATTACKS];

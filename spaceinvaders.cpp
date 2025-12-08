@@ -211,7 +211,7 @@ void SpaceInvaders::attackThread_func(int index, int delayMin, int delayMax)
             for (int i = 0; i < num_increments; i++)
             {
                 attack_y_pos[index] += 10;
-                std::this_thread::sleep_for(std::chrono::milliseconds(80));
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
             }
             isAttacking[index] = false;
         }
@@ -865,8 +865,9 @@ void SpaceInvaders::drawStartScreen(QPainter &painter)
         platformThread = std::thread(&SpaceInvaders::platformThread_func, this);
         player1_cannonThread = std::thread(&SpaceInvaders::player1_cannonThread_func, this);
         attackThread[0] = std::thread(&SpaceInvaders::attackThread_func, this, 0, 400, 800);
-        attackThread[1] = std::thread(&SpaceInvaders::attackThread_func, this, 1, 500, 1000);
-        attackThread[2] = std::thread(&SpaceInvaders::attackThread_func, this, 2, 600, 1200);
+        attackThread[1] = std::thread(&SpaceInvaders::attackThread_func, this, 1, 500, 900);
+        attackThread[2] = std::thread(&SpaceInvaders::attackThread_func, this, 2, 600, 1000);
+        attackThread[3] = std::thread(&SpaceInvaders::attackThread_func, this, 3, 700, 1100);
         if (player_mode == MULTI_PLAYER)
         {
             player2_cannonThread = std::thread(&SpaceInvaders::player2_cannonThread_func, this);
