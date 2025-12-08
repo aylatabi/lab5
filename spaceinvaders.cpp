@@ -148,15 +148,10 @@ void SpaceInvaders::platformThread_func()
 
 void SpaceInvaders::attackThread_func(int index, int delayMin, int delayMax)
 {
-    int attack_pos_x = 0;
-    int attack_pos_y = 0;
-    int alien_type = -1;
-    int num_increments = 0;
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<> distrib_column(0, 7);
-    std::uniform_int_distribution<> distrib_row(0, 2);
     std::uniform_int_distribution<> distrib_delay(delayMin, delayMax);
 
     while(attackThread_running[index])
@@ -164,23 +159,37 @@ void SpaceInvaders::attackThread_func(int index, int delayMin, int delayMax)
         int delay = distrib_delay(gen);
         std::this_thread::sleep_for(std::chrono::milliseconds(delay));
 
-        int column = distrib_column(gen);
-        int row = distrib_row(gen);
-
-        if (row == 1) column = column % 6;
-        if (row == 2) column = column % 5;
+        int attack_pos_x = 0;
+        int attack_pos_y = 0;
+        int alien_type = -1;
+        bool found = false;
 
         {
             std::lock_guard<std::mutex> lock(alien_mtx);
-            if (alien[row][column].isAlive())
-            {
-                attack_pos_x = alien[row][column].getPosition_x();
-                attack_pos_y = alien[row][column].getPosition_y();
-                alien_type = alien[row][column].getType();
+
+            // collect all live aliens
+            std::vector<std::pair<int,int>> liveAliens;
+            for (size_t r = 0; r < alien.size(); r++) {
+                for (size_t c = 0; c < alien[r].size(); c++) {
+                    if (alien[r][c].isAlive()) {
+                        liveAliens.push_back({r, c});
+                    }
+                }
+            }
+
+            // pick a random alien
+            if (!liveAliens.empty()) {
+                auto [row, col] = liveAliens[gen() % liveAliens.size()];
+                attack_pos_x = alien[row][col].getPosition_x();
+                attack_pos_y = alien[row][col].getPosition_y();
+                alien_type = alien[row][col].getType();
+                found = true;
             }
         }
-        if (alien[row][column].isAlive())
+
+        if (found)
         {
+            // center laser on alien based on type width
             if (alien_type == 1)
             {
                 attack_x_pos[index] = attack_pos_x + 32;
@@ -195,18 +204,15 @@ void SpaceInvaders::attackThread_func(int index, int delayMin, int delayMax)
             }
 
             attack_y_pos[index] = attack_pos_y + 32;
-            if (row == 0)
-            {
+            int num_increments;
+            if (attack_pos_y < 52) {
                 num_increments = 24;
-            }
-            else if (row == 1)
-            {
+            } else if (attack_pos_y < 104) {
                 num_increments = 18;
-            }
-            else if (row == 2)
-            {
+            } else {
                 num_increments = 12;
             }
+
             isAttacking[index] = true;
             for (int i = 0; i < num_increments; i++)
             {
@@ -215,9 +221,6 @@ void SpaceInvaders::attackThread_func(int index, int delayMin, int delayMax)
             }
             isAttacking[index] = false;
         }
-
-        attack_pos_x = 0;
-        attack_pos_y = 0;
     }
 }
 
