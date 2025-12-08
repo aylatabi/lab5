@@ -1322,6 +1322,8 @@ void SpaceInvaders::paintEvent(QPaintEvent *event)
         if (checkAllAliensDead())
         {
             player_won = true;
+            player1_a_button_pressed = false;
+            player2_a_button_pressed = false;
             current_state = END;
         }
         if (checkAllPlayersDead())
@@ -1340,6 +1342,8 @@ void SpaceInvaders::paintEvent(QPaintEvent *event)
                 game_over_delay++;
                 if (game_over_delay >= 120)
                 {
+                    player1_a_button_pressed = false;
+                    player2_a_button_pressed = false;
                     current_state = END;
                 }
             }
