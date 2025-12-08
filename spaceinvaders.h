@@ -93,19 +93,13 @@ private:
     std::atomic<bool> displayThread_running{true};
     void displayThread_func();
 
-    std::thread attackThread;
-    std::atomic<bool> isAttacking{false};
-    std::atomic<int> attack_x_pos{0};
-    std::atomic<int> attack_y_pos{0};
-    std::atomic<bool> attackThread_running{false};
-    void attackThread_func();
-
-    std::thread attackThread2;
-    std::atomic<bool> isAttacking2{false};
-    std::atomic<int> attack2_x_pos{0};
-    std::atomic<int> attack2_y_pos{0};
-    std::atomic<bool> attackThread2_running{false};
-    void attackThread2_func();
+    static const int NUM_ATTACKS = 3;
+    std::thread attackThread[NUM_ATTACKS];
+    std::atomic<bool> isAttacking[NUM_ATTACKS];
+    std::atomic<int> attack_x_pos[NUM_ATTACKS];
+    std::atomic<int> attack_y_pos[NUM_ATTACKS];
+    std::atomic<bool> attackThread_running[NUM_ATTACKS];
+    void attackThread_func(int index, int delayMin, int delayMax);
 
     void drawAlienType_0(QPainter &painter, int position_x, int position_y);
     void drawAlienType_1(QPainter &painter, int position_x, int position_y);

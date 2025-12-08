@@ -10,7 +10,6 @@
 #define XBOX_A_BUTTON     304
 #define XBOX_X_BUTTON     307
 
- 
 
 SpaceInvaders::SpaceInvaders(QWidget *parent) : QWidget(parent)
 {
@@ -64,8 +63,9 @@ SpaceInvaders::~SpaceInvaders()
     platformThread_running = false;
     displayThread_running = false;
     player1_cannonThread_running = false;
-    attackThread_running = false;
-    attackThread2_running = false;
+    for (int i = 0; i < NUM_ATTACKS; i++) {
+        attackThread_running[i] = false;
+    }
 }
 
 void SpaceInvaders::displayThread_func()
@@ -104,9 +104,9 @@ void SpaceInvaders::platformThread_func()
         {
             int player1_moveSpeed = 0;
             if (player1_stickValue < -8000) {
-                player1_moveSpeed = -5;  // Move left
+                player1_moveSpeed = -4;  // Move left
             } else if (player1_stickValue > 8000) {
-                player1_moveSpeed = 5;   // Move right
+                player1_moveSpeed = 4;   // Move right
             }
 
             if (player1_moveSpeed != 0) {
@@ -129,9 +129,9 @@ void SpaceInvaders::platformThread_func()
             {
                 int player2_moveSpeed = 0;
                 if (player2_stickValue < -8000) {
-                    player2_moveSpeed = -5;  // Move left
+                    player2_moveSpeed = -4;  // Move left
                 } else if (player2_stickValue > 8000) {
-                    player2_moveSpeed = 5;   // Move right
+                    player2_moveSpeed = 4;   // Move right
                 }
 
                 if (player2_moveSpeed != 0) {
@@ -146,85 +146,7 @@ void SpaceInvaders::platformThread_func()
     }
 }
 
-void SpaceInvaders::attackThread_func()
-{
-    int attack_pos_x = 0;
-    int attack_pos_y = 0;
-    int alien_type = -1;
-    int num_increments = 0;
-   
-  
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> distrib_column(0, 7);
-    std::uniform_int_distribution<> distrib_row(0, 2);
-    std::uniform_int_distribution<> distrib_delay(600, 1200);
-    while(attackThread_running)
-    {
-        int delay = distrib_delay(gen);
-        std::this_thread::sleep_for(std::chrono::milliseconds(delay));
-       
-        int column = distrib_column(gen);
-        int row = distrib_row(gen);
-
-        if (row == 1) column = column % 6;
-        if (row == 2) column = column % 5;
-
-        {
-            std::lock_guard<std::mutex> lock(alien_mtx);
-            if (alien[row][column].isAlive())
-            {
-                attack_pos_x = alien[row][column].getPosition_x();
-                attack_pos_y = alien[row][column].getPosition_y();
-                alien_type = alien[row][column].getType();
-            }   
-        }
-        if (alien[row][column].isAlive())
-        {
-            // qDebug() << "   x" << attack_pos_x << " y is " << attack_pos_y << "type is " << alien_type;
-            if (alien_type == 1)
-            {
-                attack_x_pos = attack_pos_x + 32;
-            }
-            else if (alien_type == 2)
-            {
-                attack_x_pos = attack_pos_x + 24;          
-            }
-            else if (alien_type == 3)
-            {
-                attack_x_pos = attack_pos_x + 30;
-            }
-
-            attack_y_pos = attack_pos_y + 32;
-            if (row == 0)
-            {
-                num_increments = 24;
-            }
-            else if (row == 1)
-            {
-                num_increments = 18;
-            }
-            else if (row == 2)
-            {
-                num_increments = 12;
-            }
-            isAttacking = true;
-            for (int i = 0; i < num_increments; i++)
-            {
-                attack_y_pos += 10;
-                std::this_thread::sleep_for(std::chrono::milliseconds(250));
-            }
-            isAttacking = false;
-        }
-        
-        attack_pos_x = 0;
-        attack_pos_y = 0;
-
-
-    }
-}
-
-void SpaceInvaders::attackThread2_func()
+void SpaceInvaders::attackThread_func(int index, int delayMin, int delayMax)
 {
     int attack_pos_x = 0;
     int attack_pos_y = 0;
@@ -235,8 +157,9 @@ void SpaceInvaders::attackThread2_func()
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> distrib_column(0, 7);
     std::uniform_int_distribution<> distrib_row(0, 2);
-    std::uniform_int_distribution<> distrib_delay(800, 1500);
-    while(attackThread2_running)
+    std::uniform_int_distribution<> distrib_delay(delayMin, delayMax);
+
+    while(attackThread_running[index])
     {
         int delay = distrib_delay(gen);
         std::this_thread::sleep_for(std::chrono::milliseconds(delay));
@@ -260,18 +183,18 @@ void SpaceInvaders::attackThread2_func()
         {
             if (alien_type == 1)
             {
-                attack2_x_pos = attack_pos_x + 32;
+                attack_x_pos[index] = attack_pos_x + 32;
             }
             else if (alien_type == 2)
             {
-                attack2_x_pos = attack_pos_x + 24;
+                attack_x_pos[index] = attack_pos_x + 24;
             }
             else if (alien_type == 3)
             {
-                attack2_x_pos = attack_pos_x + 30;
+                attack_x_pos[index] = attack_pos_x + 30;
             }
 
-            attack2_y_pos = attack_pos_y + 32;
+            attack_y_pos[index] = attack_pos_y + 32;
             if (row == 0)
             {
                 num_increments = 24;
@@ -284,13 +207,13 @@ void SpaceInvaders::attackThread2_func()
             {
                 num_increments = 12;
             }
-            isAttacking2 = true;
+            isAttacking[index] = true;
             for (int i = 0; i < num_increments; i++)
             {
-                attack2_y_pos += 10;
-                std::this_thread::sleep_for(std::chrono::milliseconds(250));
+                attack_y_pos[index] += 10;
+                std::this_thread::sleep_for(std::chrono::milliseconds(80));
             }
-            isAttacking2 = false;
+            isAttacking[index] = false;
         }
 
         attack_pos_x = 0;
@@ -618,14 +541,16 @@ void SpaceInvaders::stopGameThreads()
     platformThread_running = false;
     player1_cannonThread_running = false;
     player2_cannonThread_running = false;
-    attackThread_running = false;
-    attackThread2_running = false;
+    for (int i = 0; i < NUM_ATTACKS; i++) {
+        attackThread_running[i] = false;
+    }
 
     if (platformThread.joinable()) platformThread.join();
     if (player1_cannonThread.joinable()) player1_cannonThread.join();
     if (player2_cannonThread.joinable()) player2_cannonThread.join();
-    if (attackThread.joinable()) attackThread.join();
-    if (attackThread2.joinable()) attackThread2.join();
+    for (int i = 0; i < NUM_ATTACKS; i++) {
+        if (attackThread[i].joinable()) attackThread[i].join();
+    }
 }
 
 void SpaceInvaders::resetGame()
@@ -666,13 +591,11 @@ void SpaceInvaders::resetGame()
     player2_shield_cooldown_time = 0;
     player2_shield_cooldown_enabled = false;
 
-    isAttacking = false;
-    attack_x_pos = 0;
-    attack_y_pos = 0;
-
-    isAttacking2 = false;
-    attack2_x_pos = 0;
-    attack2_y_pos = 0;
+    for (int i = 0; i < NUM_ATTACKS; i++) {
+        isAttacking[i] = false;
+        attack_x_pos[i] = 0;
+        attack_y_pos[i] = 0;
+    }
 
     player1_explosion_frame = 0;
     player2_explosion_frame = 0;
@@ -936,12 +859,14 @@ void SpaceInvaders::drawStartScreen(QPainter &painter)
         platformThread_running = true;
         player1_cannonThread_running = true;
         player2_cannonThread_running = true;
-        attackThread_running = true;
-        attackThread2_running = true;
+        for (int i = 0; i < NUM_ATTACKS; i++) {
+            attackThread_running[i] = true;
+        }
         platformThread = std::thread(&SpaceInvaders::platformThread_func, this);
         player1_cannonThread = std::thread(&SpaceInvaders::player1_cannonThread_func, this);
-        attackThread = std::thread(&SpaceInvaders::attackThread_func, this);
-        attackThread2 = std::thread(&SpaceInvaders::attackThread2_func, this);
+        attackThread[0] = std::thread(&SpaceInvaders::attackThread_func, this, 0, 400, 800);
+        attackThread[1] = std::thread(&SpaceInvaders::attackThread_func, this, 1, 500, 1000);
+        attackThread[2] = std::thread(&SpaceInvaders::attackThread_func, this, 2, 600, 1200);
         if (player_mode == MULTI_PLAYER)
         {
             player2_cannonThread = std::thread(&SpaceInvaders::player2_cannonThread_func, this);
@@ -1354,79 +1279,37 @@ void SpaceInvaders::paintEvent(QPaintEvent *event)
         painter.setBrush(QBrush(Qt::red));
         painter.setPen(Qt::NoPen);
         
-        if (isAttacking)
+        for (int i = 0; i < NUM_ATTACKS; i++)
         {
-            drawAlienLaser(painter, attack_x_pos, attack_y_pos);
-            if (player1_pos <= attack_x_pos && attack_x_pos <= (player1_pos + 40) && attack_y_pos >= 235)
+            if (isAttacking[i])
             {
-                if (player1_x_button_pressed)
+                drawAlienLaser(painter, attack_x_pos[i], attack_y_pos[i]);
+                if (player1_pos <= attack_x_pos[i] && attack_x_pos[i] <= (player1_pos + 40) && attack_y_pos[i] >= 235)
                 {
-                    isAttacking = false;
-                }
-                 else
-                {
+                    if (player1_x_button_pressed)
                     {
-                        qDebug() << "Player 1 HIT";
+                        isAttacking[i] = false;
+                    }
+                    else
+                    {
+                        qDebug() << "Player 1 HIT by attack" << i;
                         std::lock_guard<std::mutex> lock(platform_mtx);
                         player[0].playerHit();
-                        isAttacking = false;
+                        isAttacking[i] = false;
                     }
                 }
-
-            }
-            if (player2_pos <= attack_x_pos && attack_x_pos <= (player2_pos + 40) && attack_y_pos >= 235)
-            {
-                if (player2_x_button_pressed)
+                if (player2_pos <= attack_x_pos[i] && attack_x_pos[i] <= (player2_pos + 40) && attack_y_pos[i] >= 235)
                 {
-                    isAttacking = false;
-                }
-                 else
-                {
+                    if (player2_x_button_pressed)
                     {
-                        qDebug() << "Player 2 HIT";
+                        isAttacking[i] = false;
+                    }
+                    else
+                    {
+                        qDebug() << "Player 2 HIT by attack" << i;
                         std::lock_guard<std::mutex> lock(platform_mtx);
                         player[1].playerHit();
-                        isAttacking = false;
-                    }
-                }
-                  
-            }
-
-
-        }
-
-        if (isAttacking2)
-        {
-            drawAlienLaser(painter, attack2_x_pos, attack2_y_pos);
-            if (player1_pos <= attack2_x_pos && attack2_x_pos <= (player1_pos + 40) && attack2_y_pos >= 235)
-            {
-                if (player1_x_button_pressed)
-                {
-                    isAttacking2 = false;
-                }
-                else
-                {
-                    {
-                        qDebug() << "Player 1 HIT by attack 2";
-                        std::lock_guard<std::mutex> lock(platform_mtx);
-                        player[0].playerHit();
-                        isAttacking2 = false;
-                    }
-                }
-            }
-            if (player2_pos <= attack2_x_pos && attack2_x_pos <= (player2_pos + 40) && attack2_y_pos >= 235)
-            {
-                if (player2_x_button_pressed)
-                {
-                    isAttacking2 = false;
-                }
-                else
-                {
-                    {
-                        qDebug() << "Player 2 HIT by attack 2";
-                        std::lock_guard<std::mutex> lock(platform_mtx);
-                        player[1].playerHit();
-                        isAttacking2 = false;
+                        isAttacking[i] = false;
                     }
                 }
             }
